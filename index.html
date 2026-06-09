@@ -29,6 +29,7 @@
         <a id="downloadLink" class="download-btn" href="#" target="_blank" rel="noreferrer">اضغط هنا لبدء التحميل الفوري</a>
     </div>
 </div>
+
 <script>
     async function getDownloadLink() {
         const url = document.getElementById('urlInput').value;
@@ -38,29 +39,37 @@
         document.getElementById('loading').style.display = 'block';
         
         try {
-            // استخدام سيرفر خارجي مفتوح ومجاني كبديل لـ Termux
-            const cleanUrl = url.split('?')[0];
-            const apiEndpoint = `https://api.allorigins.win/get?url=${encodeURIComponent(cleanUrl)}`;
+            // تنظيف الرابط لضمان الصيغة الصحيحة
+            let cleanUrl = url.split('?')[0];
+            if (!cleanUrl.endsWith('/')) {
+                cleanUrl += '/';
+            }
+            
+            // استخدام واجهة ربط بديلة ومفتوحة وقوية لتخطي حماية الشبكة
+            const targetUrl = `${cleanUrl}?__a=1&__d=dis`;
+            const apiEndpoint = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
             
             const response = await fetch(apiEndpoint);
-            const data = await response.json();
+            if (!response.ok) throw new Error('Network response was not ok');
             
+            const data = await response.json();
             document.getElementById('loading').style.display = 'none';
             
-            // محاولة البحث عن رابط الفيديو المباشر داخل الصفحة
             if(data.contents) {
-                const match = data.contents.match(/"video_url":"([^"]+)"/);
-                if(match && match[1]) {
-                    const videoUrl = match[1].replace(/\\u0026/g, '&');
+                const jsonData = JSON.parse(data.contents);
+                // محاولة جلب رابط الفيديو من البيانات الهيكلية الجديدة لانستقرام
+                const videoUrl = jsonData.graphql?.shortcode_media?.video_url || jsonData.items?.[0]?.video_versions?.[0]?.url;
+                
+                if(videoUrl) {
                     document.getElementById('downloadLink').href = videoUrl;
                     document.getElementById('result').style.display = 'block';
                     return;
                 }
             }
-            alert('جرّب مقطعاً آخر، أو تأكد أن الحساب عام وليس مغلقاً.');
+            alert('لم نتمكن من استخراج المقطع. تأكد أن الحساب عام وليس حساباً خاصاً (Private).');
         } catch (error) {
             document.getElementById('loading').style.display = 'none';
-            alert('حدث خطأ أثناء الاتصال بالشبكة.');
+            alert('عذراً، حدثت مشكلة أثناء فحص الرابط. يرجى المحاولة مجدداً أو تجربة مقطع آخر.');
         }
     }
 </script>
