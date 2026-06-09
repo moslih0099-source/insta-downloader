@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحميل مقاطع انستقرام</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; text-align: center; padding: 50px; }
+        .container { background: white; padding: 30px; border-radius: 10px; max-width: 500px; margin: 0 auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { color: #e1306c; }
+        input { width: 90%; padding: 12px; margin: 20px 0; border: 1px solid #ccc; border-radius: 5px; text-align: left; }
+        button { background-color: #e1306c; color: white; border: none; padding: 12px 25px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #c13584; }
+        #loading { margin-top: 15px; color: #666; display: none; }
+        #result { margin-top: 20px; display: none; }
+        .download-btn { background-color: #28a745; text-decoration: none; display: inline-block; color: white; padding: 10px 20px; border-radius: 5px; margin-top: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>مُحمل مقاطع انستقرام</h1>
+    <p>ضع رابط فيديو انستقرام في الأسفل لتحميله</p>
+    <input type="text" id="urlInput" placeholder="https://www.instagram.com/...">
+    <br>
+    <button onclick="getDownloadLink()">استخراج الفيديو</button>
+    <div id="loading">جاري فحص وتجهيز المقطع.. يرجى الانتظار ثوانٍ...</div>
+    <div id="result">
+        <p>🎉 تم تجهيز الفيديو بنجاح!</p>
+        <a id="downloadLink" class="download-btn" href="#" target="_blank" rel="noreferrer">اضغط هنا لبدء التحميل الفوري</a>
+    </div>
+</div>
+<script>
+    async function getDownloadLink() {
+        const url = document.getElementById('urlInput').value;
+        if(!url) return alert('الرجاء وضع الرابط أولاً!');
+        
+        document.getElementById('result').style.display = 'none';
+        document.getElementById('loading').style.display = 'block';
+        
+        try {
+            // استخدام سيرفر خارجي مفتوح ومجاني كبديل لـ Termux
+            const cleanUrl = url.split('?')[0];
+            const apiEndpoint = `https://api.allorigins.win/get?url=${encodeURIComponent(cleanUrl)}`;
+            
+            const response = await fetch(apiEndpoint);
+            const data = await response.json();
+            
+            document.getElementById('loading').style.display = 'none';
+            
+            // محاولة البحث عن رابط الفيديو المباشر داخل الصفحة
+            if(data.contents) {
+                const match = data.contents.match(/"video_url":"([^"]+)"/);
+                if(match && match[1]) {
+                    const videoUrl = match[1].replace(/\\u0026/g, '&');
+                    document.getElementById('downloadLink').href = videoUrl;
+                    document.getElementById('result').style.display = 'block';
+                    return;
+                }
+            }
+            alert('جرّب مقطعاً آخر، أو تأكد أن الحساب عام وليس مغلقاً.');
+        } catch (error) {
+            document.getElementById('loading').style.display = 'none';
+            alert('حدث خطأ أثناء الاتصال بالشبكة.');
+        }
+    }
+</script>
+</body>
+</html>
